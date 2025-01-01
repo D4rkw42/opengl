@@ -29,7 +29,6 @@ const char* fragmentShaderSource = "#version 330 core\n"
 int main(void) {
     // Inicializa a biblioteca GLFW
     glfwInit();
-    
 
     // Cria alguns "hints" para a operação do GLFW
 
@@ -58,9 +57,18 @@ int main(void) {
     glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
     GLfloat vertices[] = {
-        -0.5f,  -0.5f * float(sqrt(3)) / 3,     0.0f,
-        0.5f,   -0.5f * float(sqrt(3)) / 3,     0.0f,
-        0.0f,   0.5f * float(sqrt(3)) * 2 / 3,  0.0f
+        -0.5f,      -0.5f * float(sqrt(3)) / 3,     0.0f,
+        0.5f,       -0.5f * float(sqrt(3)) / 3,     0.0f,
+        0.0f,       0.5f * float(sqrt(3)) * 2 / 3,  0.0f,
+        -0.5f / 2,  0.5f * float(sqrt(3)) / 6,      0.0f,
+        0.5f / 2,   0.5f * float(sqrt(3)) / 6,      0.0f,
+        0.0f,       -0.5f * float(sqrt(3)) /3,      0.0f
+    };
+
+    GLuint indices[] {
+        0, 3, 5,
+        3, 2, 4,
+        5, 4, 1
     };
 
 
@@ -99,11 +107,13 @@ int main(void) {
 
     // Vertex Array Object: une diversos VBO's para rápido processamento
     // Vertex Buffer Object: pacote de dados para indicar à GPU os vértices
-    GLuint VAO, VBO; // Perceba que, em vez de uma array de vértices, o que será carregado na GPU será apenas um unsigned int representando bits de renderização
+    // Element Buffer Object: serve para fazer a indicação de índices para vértices
+    GLuint VAO, VBO, EBO; // Perceba que, em vez de uma array de vértices, o que será carregado na GPU será apenas um unsigned int representando bits de renderização
 
     // Gerando VAO, trabalhando com 1 objeto
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO); // cria um buffer (nesse caso será uma VBO). 1 significa que essa VBO está tratando de apenas 1 objeto 3D
+    glGenBuffers(1, &EBO);
 
     glBindVertexArray(VAO); // bindinng VAO
     // Bind é dizer para o OpenGL qual objeto está sendo trabalhado no momento. Todas as funções que acessam objetos irão acessá-lo até qque seja trocado
@@ -115,12 +125,20 @@ int main(void) {
     // DRAW por que iremos desenhar, pras poderíamos fazer operações de COPY e READ também
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    // Fazendo o binding do EBO para o OpenGL
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+
+    // Gerando dados para o EBO
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+    // Essas funções informam ao OpenGL como ler o VAO
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GL_FLOAT), NULL);
     glEnableVertexAttribArray(0);
 
+    // unbinding VAO, VBO e EBO por segurança (não é obrigatório!)
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
-
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 
     // Loop principal do aplicativo. Verifica se uma janela não requereu a parada da execução
@@ -137,7 +155,7 @@ int main(void) {
         glUseProgram(shaderProgram);
 
         glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glDrawElements(GL_TRIANGLES, 9, GL_UNSIGNED_INT, 0);
 
         // Carrega todas as informações do back buffer para o front buffer (equivalente a renderPresent do SDL2)
         glfwSwapBuffers(window);
@@ -149,6 +167,7 @@ int main(void) {
     // Destruindo VAO, VBO e program
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
+    glDeleteBuffers(1, &EBO);
     glDeleteProgram(shaderProgram);
 
     // Destruição de janela e finalização da biblioteca GLFW
