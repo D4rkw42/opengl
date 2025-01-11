@@ -15,6 +15,7 @@ find_package(GLFW3 CONFIG REQUIRED)
 
 # adding headers source
 include_directories(
+    "${CMAKE_SOURCE_DIR}/src"
     "${CMAKE_SOURCE_DIR}/deps/glad/include"
 )
 
@@ -23,6 +24,11 @@ add_executable(
     opengl
     
     src/main.cpp
+
+    src/utils/opengl/Shader.cpp
+    src/utils/opengl/VBO.cpp
+    src/utils/opengl/VAO.cpp
+    src/utils/opengl/EBO.cpp
     
     deps/glad/src/glad.c)
 

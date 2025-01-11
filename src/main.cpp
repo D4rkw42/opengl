@@ -5,26 +5,28 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include "utils/opengl/Shader.hpp"
+#include "utils/opengl/VBO.hpp"
+#include "utils/opengl/VAO.hpp"
+#include "utils/opengl/EBO.hpp"
+
 constexpr int WINDOW_WIDTH = 400;
 constexpr int WINDOW_HEIGHT = 400;
 
-// Estipulação de um shader de vértices simples. Orienta a GPU para a localização dos pontos de desenho
-const char* vertexShaderSource = "#version 330 core\n"
-"layout (location = 0) in vec3 aPos;\n"
-"void main()\n"
-"{\n"
-"   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-"}\0";
+GLfloat vertices[] = {
+    -0.5f,      -0.5f * float(sqrt(3)) / 3,     0.0f,
+    0.5f,       -0.5f * float(sqrt(3)) / 3,     0.0f,
+    0.0f,       0.5f * float(sqrt(3)) * 2 / 3,  0.0f,
+    -0.5f / 2,  0.5f * float(sqrt(3)) / 6,      0.0f,
+    0.5f / 2,   0.5f * float(sqrt(3)) / 6,      0.0f,
+    0.0f,       -0.5f * float(sqrt(3)) /3,      0.0f
+};
 
-// Estipulação de um shader fragment simples. Orienta a GPU sobre questões de colozização, trabnsparência, luz e sombra
-const char* fragmentShaderSource = "#version 330 core\n"
-"out vec4 FragColor;\n"
-"void main()\n"
-"{\n"
-"   FragColor = vec4(0.8f, 0.3f, 0.02f, 1.0f);\n"
-"}\n\0";
-
-// Primeiro a GPU processa os vértices para desenho e, após isso, aplica o fragment shader para colorir, definir transparência, luz e sombras
+GLuint indices[] {
+    0, 3, 5,
+    3, 2, 4,
+    5, 4, 1
+};
 
 int main(void) {
     // Inicializa a biblioteca GLFW
@@ -56,89 +58,20 @@ int main(void) {
     // Diz ao OpenGL as dimensões de desenho dentro da janela
     glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
-    GLfloat vertices[] = {
-        -0.5f,      -0.5f * float(sqrt(3)) / 3,     0.0f,
-        0.5f,       -0.5f * float(sqrt(3)) / 3,     0.0f,
-        0.0f,       0.5f * float(sqrt(3)) * 2 / 3,  0.0f,
-        -0.5f / 2,  0.5f * float(sqrt(3)) / 6,      0.0f,
-        0.5f / 2,   0.5f * float(sqrt(3)) / 6,      0.0f,
-        0.0f,       -0.5f * float(sqrt(3)) /3,      0.0f
-    };
+    // Shader Básico
+    Shader basicShader = Shader("basic_vertex_shader.vert", "basic_fragment_shader.frag");
 
-    GLuint indices[] {
-        0, 3, 5,
-        3, 2, 4,
-        5, 4, 1
-    };
+    VAO VAO1;
+    VAO1.Bind();
 
+    VBO VBO1(vertices, sizeof(vertices));
+    EBO EBO1(indices, sizeof(indices));
 
-    // Cria um shader para vértices
-    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    // Carrega o shader que criamos em vertexShaderSource
-    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-    // Compila o Shader para machine code para que a GPU possa processar
-    glCompileShader(vertexShader);
+    VAO1.LinkVBO(VBO1, 0);
+    VAO1.Unbind();
 
-
-    // Cria um shader fragment
-    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    // Carrega o shader que criamos em vertexShaderSource
-    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-    // Compila o Shader para machine code para que a GPU possa processar
-    glCompileShader(fragmentShader);
-
-    // Cria um shader program, que une diversos shaders para operação conjunta
-    GLuint shaderProgram = glCreateProgram();
-
-    // Linkando os devidos shaders ao programa
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-
-    // Linka os shaders propriamente
-    glLinkProgram(shaderProgram);
-
-    // Deletando os shaders (vamos usar a compilação conjunta apenas!)
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
-
-
-
-    // Carregar dados da CPU para a GPU é lento! Devemos, então, mandar todos os dados compilados em grandes pacotes para ser mais otimizado
-
-    // Vertex Array Object: une diversos VBO's para rápido processamento
-    // Vertex Buffer Object: pacote de dados para indicar à GPU os vértices
-    // Element Buffer Object: serve para fazer a indicação de índices para vértices
-    GLuint VAO, VBO, EBO; // Perceba que, em vez de uma array de vértices, o que será carregado na GPU será apenas um unsigned int representando bits de renderização
-
-    // Gerando VAO, trabalhando com 1 objeto
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO); // cria um buffer (nesse caso será uma VBO). 1 significa que essa VBO está tratando de apenas 1 objeto 3D
-    glGenBuffers(1, &EBO);
-
-    glBindVertexArray(VAO); // bindinng VAO
-    // Bind é dizer para o OpenGL qual objeto está sendo trabalhado no momento. Todas as funções que acessam objetos irão acessá-lo até qque seja trocado
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-
-    // gerando os dados para a VBO. Além do tipo de buffer, do tamanho do vetor de vértices e dos vértices, a função precisa saber como a informação irá trabalhar
-    // GL_STATIC -> VBO será modificado uma vez e usado várias vezes
-    // GL_DYNAMIC -> VBO será modificado várias vezes e usado várias vezes
-    // DRAW por que iremos desenhar, pras poderíamos fazer operações de COPY e READ também
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    // Fazendo o binding do EBO para o OpenGL
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-
-    // Gerando dados para o EBO
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-    // Essas funções informam ao OpenGL como ler o VAO
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GL_FLOAT), NULL);
-    glEnableVertexAttribArray(0);
-
-    // unbinding VAO, VBO e EBO por segurança (não é obrigatório!)
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    VBO1.Unbind();
+    EBO1.Unbind();
 
 
     // Loop principal do aplicativo. Verifica se uma janela não requereu a parada da execução
@@ -152,23 +85,22 @@ int main(void) {
         glClear(GL_COLOR_BUFFER_BIT);
 
         // Utilizando programa
-        glUseProgram(shaderProgram);
+        basicShader.Activate();
 
-        glBindVertexArray(VAO);
+        VAO1.Bind();
         glDrawElements(GL_TRIANGLES, 9, GL_UNSIGNED_INT, 0);
 
         // Carrega todas as informações do back buffer para o front buffer (equivalente a renderPresent do SDL2)
         glfwSwapBuffers(window);
-
-        // for convenience
-        std::this_thread::sleep_for(std::chrono::nanoseconds(1000000));
     }
 
     // Destruindo VAO, VBO e program
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
-    glDeleteBuffers(1, &EBO);
-    glDeleteProgram(shaderProgram);
+    VAO1.Delete();
+    VBO1.Delete();
+    EBO1.Delete();
+
+    // Deletando shaders
+    basicShader.Delete();
 
     // Destruição de janela e finalização da biblioteca GLFW
     glfwDestroyWindow(window);
