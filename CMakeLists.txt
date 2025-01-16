@@ -17,6 +17,7 @@ find_package(GLFW3 CONFIG REQUIRED)
 include_directories(
     "${CMAKE_SOURCE_DIR}/src"
     "${CMAKE_SOURCE_DIR}/deps/glad/include"
+    "${CMAKE_SOURCE_DIR}/deps/stb_image/include"
 )
 
 # generating executables
@@ -30,7 +31,8 @@ add_executable(
     src/utils/opengl/VAO.cpp
     src/utils/opengl/EBO.cpp
     
-    deps/glad/src/glad.c)
+    deps/glad/src/glad.c
+    deps/stb_image/src/stb_image.c)
 
 # linking libraries
 target_link_libraries(opengl PRIVATE ${OPENGL_gl_LIBRARY} glfw)

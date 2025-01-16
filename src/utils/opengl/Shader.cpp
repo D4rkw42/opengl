@@ -4,8 +4,11 @@
 #include <fstream>
 
 Shader::Shader(const std::string &vertexShaderFile, const std::string &fragmentShaderFile) {
-    const char* vertexShaderSource = Shader::ReadShader(vertexShaderFile).c_str();
-    const char* fragmentShaderSource = Shader::ReadShader(fragmentShaderFile).c_str();
+    const std::string vertexShaderContent = Shader::ReadShader(vertexShaderFile);
+    const std::string fragmentShaderContent = Shader::ReadShader(fragmentShaderFile);
+
+    const char* vertexShaderSource = vertexShaderContent.c_str();
+    const char* fragmentShaderSource = fragmentShaderContent.c_str();
 
     // Gerando vertex shader
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -36,9 +39,6 @@ Shader::Shader(const std::string &vertexShaderFile, const std::string &fragmentS
     // Deletando shaders
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
-
-    //delete[] vertexShaderSource;
-    //delete[] fragmentShaderSource;
 }
 
 void Shader::Activate(void) {
@@ -71,7 +71,7 @@ void Shader::CompileErrors(GLuint shader, const char* type) {
     GLint hasCompiled;
     char infoLog[1024];
 
-    if (type != "PROGRAM") {
+    if (strcmp(type, "PROGRAM") == 0) {
         glGetShaderiv(shader, GL_COMPILE_STATUS, &hasCompiled);
 
         if (hasCompiled == GL_FALSE) {
