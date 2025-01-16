@@ -10,16 +10,17 @@
 #include "utils/opengl/VAO.hpp"
 #include "utils/opengl/EBO.hpp"
 
-constexpr int WINDOW_WIDTH = 400;
-constexpr int WINDOW_HEIGHT = 400;
+constexpr int WINDOW_WIDTH = 600;
+constexpr int WINDOW_HEIGHT = 600;
 
 GLfloat vertices[] = {
-    -0.5f,      -0.5f * float(sqrt(3)) / 3,     0.0f,
-    0.5f,       -0.5f * float(sqrt(3)) / 3,     0.0f,
-    0.0f,       0.5f * float(sqrt(3)) * 2 / 3,  0.0f,
-    -0.5f / 2,  0.5f * float(sqrt(3)) / 6,      0.0f,
-    0.5f / 2,   0.5f * float(sqrt(3)) / 6,      0.0f,
-    0.0f,       -0.5f * float(sqrt(3)) /3,      0.0f
+    //              COORDINATES                         //      COLORS          
+    -0.5f,      -0.5f * float(sqrt(3)) / 3,     0.0f,   1.0f,   0.0f,   0.0f,
+    0.5f,       -0.5f * float(sqrt(3)) / 3,     0.0f,   0.8f,   0.3f,   0.02f,
+    0.0f,       0.5f * float(sqrt(3)) * 2 / 3,  0.0f,   0.0f,   1.0f,   0.0f,
+    -0.5f / 2,  0.5f * float(sqrt(3)) / 6,      0.0f,   0.9f,   0.45f,  0.17f,
+    0.5f / 2,   0.5f * float(sqrt(3)) / 6,      0.0f,   0.9f,   0.45f,  0.17f,
+    0.0f,       -0.5f * float(sqrt(3)) /3,      0.0f,   0.0f,   0.0f,   1.0f
 };
 
 GLuint indices[] {
@@ -55,6 +56,8 @@ int main(void) {
     // Inicia as funções do OpenGL através do GLAD
     gladLoadGL();
 
+    std::cout << "Using OpenGL version: " << glGetString(GL_VERSION) << "\n";
+
     // Diz ao OpenGL as dimensões de desenho dentro da janela
     glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
@@ -67,12 +70,15 @@ int main(void) {
     VBO VBO1(vertices, sizeof(vertices));
     EBO EBO1(indices, sizeof(indices));
 
-    VAO1.LinkVBO(VBO1, 0);
+    VAO1.LinkAttrib(VBO1, 0, 3, GL_FLOAT, 6 * sizeof(GLfloat), (void*)0);
+    VAO1.LinkAttrib(VBO1, 1, 3, GL_FLOAT, 6 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
+    
     VAO1.Unbind();
-
     VBO1.Unbind();
     EBO1.Unbind();
 
+    // obtendo o acesso à região uniform
+    GLuint uniID = glGetUniformLocation(basicShader.ID, "scale");
 
     // Loop principal do aplicativo. Verifica se uma janela não requereu a parada da execução
     while (!glfwWindowShouldClose(window)) {
@@ -86,6 +92,7 @@ int main(void) {
 
         // Utilizando programa
         basicShader.Activate();
+        glUniform1f(uniID, 0.5f); // adicionando calor uniform no programa de shader
 
         VAO1.Bind();
         glDrawElements(GL_TRIANGLES, 9, GL_UNSIGNED_INT, 0);

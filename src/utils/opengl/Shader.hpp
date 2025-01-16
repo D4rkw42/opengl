@@ -23,5 +23,8 @@ class Shader {
 
         // utility
         static std::string ReadShader(const std::string& shaderFile); // faz a leitura de um shader
+    
+    private:
+        void CompileErrors(GLuint shader, const char* type);
 
 };
