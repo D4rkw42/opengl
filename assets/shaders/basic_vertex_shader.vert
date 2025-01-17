@@ -9,8 +9,12 @@ out vec2 texCoord;
 
 uniform float scale;
 
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 proj;
+
 void main() {
-    gl_Position = vec4(aPos.x * (1.0f + scale), aPos.y * (1.0f + scale), aPos.z * (1.0f + scale), 1.0f);
+    gl_Position = proj * view * model * vec4(aPos, 1.0f);
 
     color = aColor;
     texCoord = aTex;

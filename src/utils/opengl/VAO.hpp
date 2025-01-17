@@ -13,7 +13,7 @@ class VAO {
 
         VAO(void);
 
-        void LinkAttrib(VBO VBO, GLuint layout, GLuint numComponents, GLenum type, GLsizeiptr stride, void* offset);
+        void LinkAttrib(VBO& VBO, GLuint layout, GLuint numComponents, GLenum type, GLsizeiptr stride, void* offset);
         void Bind(void);
         void Unbind(void);
         void Delete(void);
