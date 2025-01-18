@@ -15,6 +15,9 @@
 #include "utils/opengl/VBO.hpp"
 #include "utils/opengl/VAO.hpp"
 #include "utils/opengl/EBO.hpp"
+#include "utils/opengl/Camera.hpp"
+
+using namespace std::literals::chrono_literals;
 
 constexpr int WINDOW_WIDTH = 600;
 constexpr int WINDOW_HEIGHT = 600;
@@ -83,9 +86,6 @@ int main(void) {
     VBO1.Unbind();
     EBO1.Unbind();
 
-    // obtendo o acesso à região uniform
-    GLint uniID = glGetUniformLocation(basicShader.ID, "scale");
-
     // Texture
     int imgWidth, imgHeight, numColCh;
     stbi_set_flip_vertically_on_load(true);
@@ -116,26 +116,29 @@ int main(void) {
     basicShader.Activate();
     glUniform1i(text0UniID, 0);
 
-    float rotation = 0.0f;
-    double prevTime = glfwGetTime();
-
     // habilitando o uso do deaph buffer
     glEnable(GL_DEPTH_TEST);
+
+    // Objeto de câmera
+    int windowWidth = WINDOW_WIDTH, windowHeight = WINDOW_HEIGHT;
+    Camera camera = Camera(glm::vec3(0.0f, 0.0f, 2.0f), windowWidth, windowHeight);
+
+    double prevTime = glfwGetTime();
 
     // Loop principal do aplicativo. Verifica se uma janela não requereu a parada da execução
     while (!glfwWindowShouldClose(window)) {
         // Carrega todos os eventos do GLFW  
         glfwPollEvents();
 
-        // temporização
         double currTime = glfwGetTime();
-        if (currTime - prevTime >= 1.0f / 80) {
-            rotation += 0.5f;
-            prevTime = currTime;
-        }
+        double delta = currTime - prevTime;
+        prevTime = currTime;
 
-        int windowWidth, windowHeight;
+        // obtendo o tamanho da janela
         glfwGetWindowSize(window, &windowWidth, &windowHeight);
+
+        camera.width = windowWidth;
+        camera.height = windowHeight;
 
         // Diz ao OpenGL as dimensões de desenho dentro da janela
         glViewport(0, 0, windowWidth, windowHeight);
@@ -148,28 +151,11 @@ int main(void) {
         // Utilizando programa
         basicShader.Activate();
 
-        // Criando matrizes de renderização 3D model, view e proj
-        glm::mat4 model = glm::mat4(1.0f);
-        glm::mat4 view = glm::mat4(1.0f);
-        glm::mat4 proj = glm::mat4(1.0f);
-
-        model = glm::rotate(model, glm::radians(rotation), glm::vec3(0.0f, 1.0f, 0.0f));
-
-        view = glm::translate(view, glm::vec3(0.0f, -0.5f, -2.0f)); // mudando posição no mundo
-        // 0.1f e 100.0f são as distâncias minima e máxima que as informações serão renderizadas
-        proj = glm::perspective(glm::radians(45.0f), static_cast<float>(windowWidth) / windowHeight, 0.1f, 100.0f); // mudando perspectiva
-
-        // adicionando valores uniform
-        GLint modelUniID = glGetUniformLocation(basicShader.ID, "model");
-        GLint viewUniID = glGetUniformLocation(basicShader.ID, "view");
-        GLint projUniID = glGetUniformLocation(basicShader.ID, "proj");
-
-        glUniformMatrix4fv(modelUniID, 1, GL_FALSE, glm::value_ptr(model));
-        glUniformMatrix4fv(viewUniID, 1, GL_FALSE, glm::value_ptr(view));
-        glUniformMatrix4fv(projUniID, 1, GL_FALSE, glm::value_ptr(proj));
+        // utilizando a câmera
+        camera.Inputs(window, delta);
+        camera.Matrix(45.0f, 0.1f, 100.0f, basicShader, "camMatrix");
 
         // Desenhando
-        glUniform1f(uniID, 0.5f); // adicionando calor uniform no programa de shader
         glBindTexture(GL_TEXTURE_2D, texture); // binding buffer
 
         VAO1.Bind();
@@ -177,6 +163,9 @@ int main(void) {
 
         // Carrega todas as informações do back buffer para o front buffer (equivalente a renderPresent do SDL2)
         glfwSwapBuffers(window);
+
+        // for convinience
+        std::this_thread::sleep_for(1ms);
     }
 
     // Destruindo VAO, VBO e program

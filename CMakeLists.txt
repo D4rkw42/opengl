@@ -30,6 +30,7 @@ add_executable(
     src/utils/opengl/VBO.cpp
     src/utils/opengl/VAO.cpp
     src/utils/opengl/EBO.cpp
+    src/utils/opengl/Camera.cpp
     
     deps/glad/src/glad.c
     deps/stb_image/src/stb_image.c)
